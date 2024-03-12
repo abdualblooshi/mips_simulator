@@ -94,3 +94,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     gui = MIPS_GUI(root)
     root.mainloop()
+
+
+
+
