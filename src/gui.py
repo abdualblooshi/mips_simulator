@@ -1,15 +1,22 @@
+# gui.py
+
 import tkinter as tk
+from tkinter import ttk  # Import ttk for the Combobox 
 from tkinter import scrolledtext
 from tkinter import messagebox
+
+from simulator import Simulator, assemble_instruction
 
 class MIPS_GUI:
     def __init__(self, master):
         self.master = master
         master.title("MIPS Simulator")
 
+        self.simulator = Simulator()  # Instantiate the simulator
         self.dark_mode = True
         self.setup_ui()
         self.apply_theme()
+        
 
     def setup_ui(self):
         # Create a menu bar
@@ -24,6 +31,11 @@ class MIPS_GUI:
         # Code editor
         self.code_editor = scrolledtext.ScrolledText(self.master, undo=True, height=20, width=60)
         self.code_editor.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
+        
+        instructions_label = tk.Label(self.master, text="Instructions:\n"
+                                                "  * Enter instructions in decimal format.\n"
+                                                "  * Example (addi $t0, $zero, 5):  8 8 0 5")
+        instructions_label.grid(row=2, column=0) # Place this below your code editor 
 
         # Run button
         self.run_btn = tk.Button(self.master, text="Run", command=self.run_simulation)
@@ -65,12 +77,34 @@ class MIPS_GUI:
         self.memory_display.config(bg=theme["bg"], fg=theme["fg"])
 
     def run_simulation(self):
-        # Placeholder for simulation logic
-        messagebox.showinfo("Simulation", "Simulation started... This is a placeholder.")
-        # Update displays here using real simulation data
-        self.update_registers_display({"$t0": "0x00", "$t1": "0x01"})
-        self.update_memory_display({"0x10010000": "0xFF"})
+        code = self.code_editor.get("1.0", tk.END).strip()  
+        instructions = code.splitlines()  
 
+        machine_code_instructions = []
+        for instruction_str in instructions:
+            machine_code = assemble_instruction(instruction_str)
+            machine_code_instructions.append(machine_code)
+
+        try:
+            self.simulator.run(machine_code_instructions) 
+            self.update_gui_from_simulator()  
+        except Exception as e:  
+            messagebox.showerror("Simulation Error", str(e))
+            
+    def update_gui_from_simulator(self):
+        # Access register values from your simulator
+        registers = {f"${i}": hex(val) for i, val in enumerate(self.simulator.registers.registers)} 
+        self.update_registers_display(registers)
+
+        # Access memory contents from your simulator
+        memory = {}
+        for i in range(0, len(self.simulator.data_memory.memory), 4):
+            address = hex(i)
+            word = int.from_bytes(self.simulator.data_memory.memory[i:i+4], byteorder='little')
+            memory[address] = hex(word)
+        self.update_memory_display(memory)
+
+            
     def update_registers_display(self, registers):
         self.registers_display.configure(state='normal')
         self.registers_display.delete("1.0", tk.END)
