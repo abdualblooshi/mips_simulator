@@ -92,8 +92,21 @@ class MIPS_GUI:
             messagebox.showerror("Simulation Error", str(e))
             
     def update_gui_from_simulator(self):
-        # Access register values from your simulator
-        registers = {f"${i}": hex(val) for i, val in enumerate(self.simulator.registers.registers)} 
+        
+        inverted_register_mapping = {
+            0: "$zero", 1: "$at", 2: "$v0", 3: "$v1",
+            4: "$a0", 5: "$a1", 6: "$a2", 7: "$a3",
+            8: "$t0", 9: "$t1", 10: "$t2", 11: "$t3",
+            12: "$t4", 13: "$t5", 14: "$t6", 15: "$t7",
+            16: "$s0", 17: "$s1", 18: "$s2", 19: "$s3",
+            20: "$s4", 21: "$s5", 22: "$s6", 23: "$s7",
+            24: "$t8", 25: "$t9", 26: "$k0", 27: "$k1",
+            28: "$gp", 29: "$sp", 30: "$fp", 31: "$ra"
+        }
+        
+        # Access register values from your simulator and map them to their names
+        registers = {inverted_register_mapping.get(i, f"$unknown{i}"): hex(val) 
+                    for i, val in enumerate(self.simulator.registers.registers)} 
         self.update_registers_display(registers)
 
         # Access memory contents from your simulator
@@ -103,6 +116,7 @@ class MIPS_GUI:
             word = int.from_bytes(self.simulator.data_memory.memory[i:i+4], byteorder='little')
             memory[address] = hex(word)
         self.update_memory_display(memory)
+
 
             
     def update_registers_display(self, registers):

@@ -10,6 +10,17 @@ class Simulator:
     """
     A class that simulates the execution of MIPS instructions.
     """
+    # this is used to map the register names to their respective IDs
+    inverted_register_mapping = {
+        0: "$zero", 1: "$at", 2: "$v0", 3: "$v1",
+        4: "$a0", 5: "$a1", 6: "$a2", 7: "$a3",
+        8: "$t0", 9: "$t1", 10: "$t2", 11: "$t3",
+        12: "$t4", 13: "$t5", 14: "$t6", 15: "$t7",
+        16: "$s0", 17: "$s1", 18: "$s2", 19: "$s3",
+        20: "$s4", 21: "$s5", 22: "$s6", 23: "$s7",
+        24: "$t8", 25: "$t9", 26: "$k0", 27: "$k1",
+        28: "$gp", 29: "$sp", 30: "$fp", 31: "$ra"
+    }
     
     def __init__(self):
         self.registers = RegisterFile()
@@ -79,11 +90,14 @@ class Simulator:
             self.data_memory.write(memory_address, data_to_write)
 
         if self.control_unit.reg_write:
-            # rt is the destination register for I-type instructions
-            # rd is the destination register for R-type instructions
-            destination_reg = rt if self.control_unit.reg_dst == 0 else rd
-            write_data = self.alu.result  
+            destination_reg = rd if self.control_unit.reg_dst else rt  # This depends on your control unit's logic
+            write_data = self.alu.result
+            # Debug prints
+            print(f"RegWrite: {self.control_unit.reg_write}, reg_dst: {self.control_unit.reg_dst}")
+            print(f"Register to Write: {self.inverted_register_mapping.get(destination_reg, '$unknown')}, Data to Write: {hex(write_data)}")
             self.registers.write(destination_reg, write_data)
+
+
 
         # Update PC
         if self.control_unit.branch and self.alu.zero:
@@ -137,6 +151,20 @@ def assemble_instruction(instruction_str):
         "jr": {"format": "R", "opcode": 0, "funct": 8},
         "slt": {"format": "R", "opcode": 0, "funct": 42},
     }
+    
+    # register mapping hashmap
+    register_mapping = {
+        "$zero": 0, "$at": 1, "$v0": 2, "$v1": 3,
+        "$a0": 4, "$a1": 5, "$a2": 6, "$a3": 7,
+        "$t0": 8, "$t1": 9, "$t2": 10, "$t3": 11,
+        "$t4": 12, "$t5": 13, "$t6": 14, "$t7": 15,
+        "$s0": 16, "$s1": 17, "$s2": 18, "$s3": 19,
+        "$s4": 20, "$s5": 21, "$s6": 22, "$s7": 23,
+        "$t8": 24, "$t9": 25, "$k0": 26, "$k1": 27,
+        "$gp": 28, "$sp": 29, "$fp": 30, "$ra": 31
+    }
+    
+    inverted_register_mapping = {v: k for k, v in register_mapping.items()}
 
     instr_details = instruction_set.get(mnemonic)
     if not instr_details:
@@ -146,13 +174,22 @@ def assemble_instruction(instruction_str):
     assembled = opcode << 26
 
     if instr_details["format"] == "R":
-        rs, rt, rd = [int(op[1:]) for op in operands[:3]]
+        rs, rt, rd = [register_mapping[op] if op in register_mapping else int(op[1:]) for op in operands[:3]]
         shamt = int(operands[3]) if len(operands) > 3 else 0
         funct = instr_details["funct"]
         assembled |= (rs << 21) | (rt << 16) | (rd << 11) | (shamt << 6) | funct
     elif instr_details["format"] == "I":
-        rs, rt, immediate = [int(op[1:]) if '$' in op else int(op) for op in operands]
-        assembled |= (rs << 21) | (rt << 16) | (immediate & 0xFFFF)
+        if mnemonic in ["lw", "sw"]:  # Handle instructions with offset(base) addressing
+            offset_base = operands[1].replace('(', ' ').replace(')', '').split()
+            offset = int(offset_base[0])
+            base = register_mapping[offset_base[1]]
+            rt = register_mapping[operands[0]]
+            assembled |= (base << 21) | (rt << 16) | (offset & 0xFFFF)
+        else:  # Handle other I-type instructions
+            rt = register_mapping[operands[0]] if operands[0] in register_mapping else int(operands[0][1:])
+            rs = register_mapping[operands[1]] if operands[1] in register_mapping else int(operands[1][1:])
+            immediate = int(operands[2])
+            assembled |= (rs << 21) | (rt << 16) | (immediate & 0xFFFF)
     elif instr_details["format"] == "J":
         address = int(operands[0])
         assembled |= (address & 0x03FFFFFF)
