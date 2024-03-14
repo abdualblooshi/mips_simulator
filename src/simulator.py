@@ -148,14 +148,13 @@ def preprocess_instructions(instructions):
 
 def assemble_instruction(instruction_str, labels_to_addresses, pc):
     # this function assembles a MIPS instruction from its string representation to its binary representation
-    
-    # todo abdulrahman, essam, ahmed
     parts = instruction_str.split(maxsplit=1)
     instruct_name = parts[0]
     operands_str = parts[1] if len(parts) > 1 else ""
     operands = [op.strip() for op in operands_str.split(",")] if operands_str else []
 
     # opcode and funct values based on the MIPS instruction set
+    #todo ahmed
     instruction_set = {
         "add": {"format": "R", "opcode": 0, "funct": 32},
         "addi": {"format": "I", "opcode": 8},
@@ -175,6 +174,7 @@ def assemble_instruction(instruction_str, labels_to_addresses, pc):
     }
     
     # register mapping hashmap
+    # todo essam
     register_mapping = {
         "$zero": 0, "$at": 1, "$v0": 2, "$v1": 3,
         "$a0": 4, "$a1": 5, "$a2": 6, "$a3": 7,
