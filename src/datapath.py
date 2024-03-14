@@ -1,4 +1,5 @@
 # datapath.py
+# todo musab
 
 from control_unit import ControlUnit
 from memory import instruction_memory, data_memory
@@ -24,7 +25,7 @@ class RegisterFile:
         write a value to a register, the register number and the data to be written are passed as arguments to the function
         """
         self._validate_register_number(reg_number)
-        if reg_number != 0:  # Register 0 is always 0
+        if reg_number != 0:  # register 0 is always 0
             self.registers[reg_number] = data
 
     @staticmethod
@@ -32,13 +33,14 @@ class RegisterFile:
         if not (0 <= reg_number < 32):
             raise ValueError("Register number must be between 0 and 31 inclusive.")
 
-# Expanding the ALU class
+# expanding the ALU class
 class ALU:
+    #todo abdulrahman
     def __init__(self):
         self.result = None
         self.zero = False
     
-    def operate(self, operand1, operand2, operation, funct):
+    def operate(self, operand1, operand2, operation):
         # these are the arithmetic operations that the ALU can perform
         # the operation is determined by the control unit
         if operation == ALUOp.ADD.value:
@@ -58,15 +60,9 @@ class ALU:
         else:
             raise ValueError(f"Unsupported ALU operation: {operation}")
         self.zero = (self.result == 0)
-    
-    def funct_based_operations(self, operand1, operand2, funct):
-        if funct == 32:  # add
-            return operand1 + operand2
-        # Add more mappings from funct codes to ALU operations
-        else:
-            raise ValueError(f"Unsupported function code: {funct}")
 
 class ProgramCounter:
+    #todo ahmed
     def __init__(self):
         self.address = 0
 
@@ -74,30 +70,34 @@ class ProgramCounter:
         self.address = new_address
 
 class Adder:
+    #todo ahmed
     @staticmethod
     def add(value1, value2):
         return value1 + value2
 
 class Multiplexer:
+    #todo essam
     @staticmethod
     def select(input1, input2, control_signal):
         return input1 if control_signal == 0 else input2
 
 class SignExtend:
+    #todo musab
     @staticmethod
     def extend(value):
-        # Assumes 'value' is 16 bits
+        # assumes 'value' is 16 bits
         return value if value < 0x8000 else value | 0xFFFF0000 # here we assume 0xFFFF0000 is the sign extension and 0x8000 is the sign bit mask for 16 bits which converts the 16 bit value to 32 bit value
     
         # like when we have a binary number 1111 1111 1111 1111 and we want to convert it to 32 bit number we add zeroes to the left of the number to make it 32 bits
         # 0000 0000 0000 0000 1111 1111 1111 1111
 
 class ShiftLeft2:
+    #todo abdulrahman
     @staticmethod
     def shift(value):
         return value << 2
 
-# Other components you already have (e.g., RegisterFile, ALU) are used here.
+# other components you already have (e.g., RegisterFile, ALU) are used here.
 
 def run_cycle():
     pc = ProgramCounter()
@@ -114,11 +114,13 @@ def run_cycle():
     # FETCH -> DECODE -> EXECUTE -> MEMORY ACCESS -> WRITE BACK
     
     while True:  # this loop simulates the clock cycles of the MIPS processor
-        # FETCH
+        # fetch
+        # todo abdulrahman
         instruction = instruction_memory.read(pc.address)
         pc.update(adder.add(pc.address, 4))
         
-        # DECODE
+        # decode
+        # todo musab
         opcode = (instruction & 0xFC000000) >> 26
         rs = (instruction & 0x03E00000) >> 21
         rt = (instruction & 0x001F0000) >> 16
@@ -128,7 +130,8 @@ def run_cycle():
         immediate = instruction & 0x0000FFFF
         address = instruction & 0x03FFFFFF
         
-        # EXECUTE
+        # execute
+        # todo ahmed
         reg_value1 = reg_file.read(rs)
         reg_value2 = reg_file.read(rt)
         sign_extended_immediate = sign_extend.extend(immediate)
@@ -138,7 +141,8 @@ def run_cycle():
         
         alu.operate(alu_operand1, alu_operand2, control_unit.alu_op)
         
-        # MEMORY ACCESS
+        #  memory access
+        # todo essam
         if control_unit.mem_read:
             memory_address = alu.result
             data_memory.read(memory_address)
@@ -147,13 +151,15 @@ def run_cycle():
             data_to_write = reg_value2
             data_memory.write(memory_address, data_to_write)
         
-        # WRITE BACK
+        #  write back
+        # todo ahmed
         if control_unit.reg_write:
             destination_reg = rd if control_unit.reg_dst else rt
             write_data = alu.result
             reg_file.write(destination_reg, write_data)
         
-        # Update PC
+        # update PC
+        # todo abdulrahman
         if control_unit.branch and alu.zero:
             pc.update(adder.add(pc.address, shift_left2.shift(sign_extended_immediate)))
         elif control_unit.jump:

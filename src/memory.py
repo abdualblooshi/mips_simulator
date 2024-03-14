@@ -1,5 +1,5 @@
 # memory.py
-
+# todo abdulrahman & essam
 class Memory:
     """
     A class that simulates memory for the MIPS simulator.
@@ -7,10 +7,10 @@ class Memory:
     """
     
     def __init__(self, size):
-        # Ensure that the memory size is a multiple of 4 for word-alignment
+        # make sure that the memory size is a multiple of 4
         if size % 4 != 0:
             raise ValueError("Memory size must be a multiple of 4.")
-        self.memory = bytearray(size) # Initialize memory with zeros
+        self.memory = bytearray(size) # initialize memory with zeros
 
     def read(self, address):
         """
@@ -38,7 +38,7 @@ class Memory:
         self.memory[4 * word_address: 4 * (word_address + 1)] = data.to_bytes(4, byteorder='little')
 
 
-# Initialize the memory for instructions and data with a sensible default size
+# initialize the memory for instructions and data with default size
 instruction_memory = Memory(4096)  # 4KB
 data_memory = Memory(4096)  # 4KB
 

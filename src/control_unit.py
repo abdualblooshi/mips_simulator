@@ -1,10 +1,15 @@
 # control_unit.py
-
+# todo abdulrahman alblooshi , essam & ahmed
 from enum import Enum
 
 class ALUOp(Enum):
     # this serves as a mapping from the ALUOp field in the instruction to the ALU control lines
     # like hashmaps in java but with a more readable syntax and uses object oriented programming
+    
+    # enum basically is a way to create a set of constants that can be used in a program, and the reason why we put it in a class is so that we can access the constants using the class name and the dot operator like ALUOp.ADD.value instead of just ADD.value which is more readable and less prone to errors (i took read this in a python book)
+    
+    # musab's idea
+    
     ADD = 0
     SUB = 1
     AND = 2
@@ -13,12 +18,10 @@ class ALUOp(Enum):
     SLL = 5
     NOR = 6
 
-
-# Correcting the implementation using decimal values for opcodes and function codes
 class ControlUnit:
     """
-    A class to simulate the control unit of the MIPS processor.
-    It generates control signals based on the current instruction.
+    a class to simulate the control unit of the MIPS processor.
+    it generates control signals based on the current instruction.
     """
     
     def __init__(self):
@@ -33,9 +36,10 @@ class ControlUnit:
         self.reg_write = 0
 
     def set_control_signals(self, opcode):
-        # Reset control signals
+        # reset control signals
         self.reset_control_signals()
         
+        # i made this set of instructions to be a dictionary so that i can easily access the control signals for each instruction using the opcode, this is a better way to do it than using if else statements its kinda like a hashmap in java
         
         instruction_set = {
             "add": {"format": "R", "opcode": 0, "funct": 32},
@@ -54,7 +58,7 @@ class ControlUnit:
             "jr": {"format": "R", "opcode": 0, "funct": 8},
             "slt": {"format": "R", "opcode": 0, "funct": 42},
         }
-        # Logic to set control signals based on the decimal opcode
+        # this logic is used to determine the control signals based on the opcode of the instruction being executed
         if opcode == 0:  # handle funct field for R-type instructions
             # iterate through the instruction set to find the instruction with the matching opcode
             for instruction, values in instruction_set.items():

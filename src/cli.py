@@ -1,3 +1,6 @@
+# cli.py
+# mostly created by abdulrahman alblooshi
+
 import argparse
 from simulator import Simulator, assemble_instruction, preprocess_instructions
 
@@ -13,7 +16,7 @@ def run_simulator(instructions):
     for instruction_str in instructions:
         machine_code = assemble_instruction(instruction_str, labels_to_addresses, simulator.pc)
         simulator.run([machine_code])
-        # Output the state of the registers and memory after running each instruction
+        # output the state of the registers and memory after running each instruction
         print_register_state(simulator)
         print_memory_state(simulator)
 
@@ -30,12 +33,12 @@ inverted_register_mapping = {
 
 def print_register_state(simulator):
     for i, reg in enumerate(simulator.registers.registers):
-        # Use the inverted_register_mapping to get the register name from its ID
+        # use the inverted_register_mapping to get the register name from its ID
         reg_name = inverted_register_mapping.get(i, f"$unknown{i}")
         print(f"{reg_name}: {hex(reg)}")
 
 def print_memory_state(simulator):
-    # Example: print first few memory locations for simplicity
+    # example: print first few memory locations for simplicity
     for i in range(0, 100, 4):
         data = simulator.data_memory.read(i)
         print(f"Memory at {hex(i)}: {hex(data)}")

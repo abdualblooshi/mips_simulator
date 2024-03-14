@@ -1,7 +1,8 @@
 # gui.py
+# todo ahmed 
 
 import tkinter as tk
-from tkinter import ttk  # Import ttk for the Combobox 
+from tkinter import ttk  # import ttk for the Combobox 
 from tkinter import scrolledtext
 from tkinter import messagebox
 from tkinter import filedialog
@@ -13,7 +14,7 @@ class MIPS_GUI:
         self.master = master
         master.title("MIPS Simulator")
 
-        self.simulator = Simulator()  # Instantiate the simulator
+        self.simulator = Simulator()  # instantiate the simulator
         self.dark_mode = True
         self.setup_ui()
         self.apply_theme()
@@ -42,7 +43,7 @@ class MIPS_GUI:
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
         self.master.config(menu=self.menu_bar)
 
-        # Code editor
+        # code editor
         self.code_editor = scrolledtext.ScrolledText(self.master, undo=True, height=20, width=60)
         self.code_editor.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
         
@@ -50,17 +51,17 @@ class MIPS_GUI:
                                                 "  * Press run to load the registers and memory\n")       
         instructions_label.grid(row=2, column=0) # Place this below your code editor 
 
-        # Run button
+        # run button
         self.run_btn = tk.Button(self.master, text="Run", command=self.run_simulation)
         self.run_btn.grid(row=1, column=0, pady=10, sticky="ew")
 
-        # Register states display
+        # register states display
         self.registers_display = scrolledtext.ScrolledText(self.master, height=10, width=30)
         self.registers_display.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
         self.registers_display.insert(tk.INSERT, "Registers\n")
         self.registers_display.configure(state='disabled')
 
-        # Memory contents display
+        # memory contents display
         self.memory_display = scrolledtext.ScrolledText(self.master, height=10, width=30)
         self.memory_display.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
         self.memory_display.insert(tk.INSERT, "Memory\n")
@@ -119,12 +120,12 @@ class MIPS_GUI:
             28: "$gp", 29: "$sp", 30: "$fp", 31: "$ra"
         }
         
-        # Access register values from your simulator and map them to their names
+        # access register values from your simulator and map them to their names
         registers = {inverted_register_mapping.get(i, f"$unknown{i}"): hex(val) 
                     for i, val in enumerate(self.simulator.registers.registers)} 
         self.update_registers_display(registers)
 
-        # Access memory contents from your simulator
+        # access memory contents from your simulator
         memory = {}
         for i in range(0, len(self.simulator.data_memory.memory), 4):
             address = hex(i)
