@@ -55,10 +55,40 @@ class ControlUnit:
             "slt": {"format": "R", "opcode": 0, "funct": 42},
         }
         # Logic to set control signals based on the decimal opcode
-        if opcode == 0:  # add
-            self.reg_dst = 1
-            self.alu_op = ALUOp.ADD.value
-            self.reg_write = 1
+        if opcode == 0:  # handle funct field for R-type instructions
+            # iterate through the instruction set to find the instruction with the matching opcode
+            for instruction, values in instruction_set.items():
+                if values["opcode"] == opcode:
+                    self.funct = values["funct"]
+                    break
+            if self.funct == 32:
+                self.reg_dst = 1
+                self.alu_op = ALUOp.ADD.value
+                self.reg_write = 1
+            elif self.funct == 0:
+                self.reg_dst = 1
+                self.alu_op = ALUOp.SLL.value
+                self.reg_write = 1
+            elif self.funct == 36:
+                self.reg_dst = 1
+                self.alu_op = ALUOp.AND.value
+                self.reg_write = 1
+            elif self.funct == 37:
+                self.reg_dst = 1
+                self.alu_op = ALUOp.OR.value
+                self.reg_write = 1
+            elif self.funct == 39:
+                self.reg_dst = 1
+                self.alu_op = ALUOp.NOR.value
+                self.reg_write = 1
+            elif self.funct == 42:
+                self.reg_dst = 1
+                self.alu_op = ALUOp.SLT.value
+                self.reg_write = 1
+            elif self.funct == 8:
+                self.jump = 1
+        elif opcode == 2:  # j
+            self.jump = 1
         elif opcode == 8:  # addi
             self.alu_src = 1
             self.alu_op = ALUOp.ADD.value
@@ -74,39 +104,11 @@ class ControlUnit:
         elif opcode == 4:  # beq
             self.branch = 1
             self.alu_op = ALUOp.SUB.value
-        elif opcode == 2:  # j
-            self.jump = 1
-        elif opcode == 3:  # jal
-            self.jump = 1
-            self.reg_write = 1
-        elif opcode == 0:  # jr
-            self.jump = 1
-        elif opcode == 12:  # andi
+        elif opcode == 12: # andi
             self.alu_src = 1
             self.alu_op = ALUOp.AND.value
             self.reg_write = 1
-        elif opcode == 13:  # ori
-            self.alu_src = 1
-            self.alu_op = ALUOp.OR.value
-            self.reg_write = 1
-        elif opcode == 4:  # beq
-            self.branch = 1
-            self.alu_op = ALUOp.SUB.value
-        elif opcode == 2:  # j
-            self.jump = 1
-        elif opcode == 3:  # jal
-            self.jump = 1
-            self.reg_write = 1
-        elif opcode == 0:  # jr
-            self.jump = 1
-        elif opcode == 42:  # slt
-            self.alu_op = ALUOp.SLT.value
-            self.reg_write = 1
-        elif opcode == 0:  # sll
-            self.alu_op = ALUOp.SLL.value
-            self.reg_write = 1
-        else:
-            raise ValueError(f"Unsupported opcode: {opcode}")
+        
         print(f"Control Signals: ALUSrc={self.alu_src}, RegDst={self.reg_dst}, MemRead={self.mem_read}, MemWrite={self.mem_write}, RegWrite={self.reg_write}, Branch={self.branch}, ALUOp={self.alu_op}, MemReg={self.mem_to_reg}")
 
     def reset_control_signals(self):
@@ -127,8 +129,8 @@ class ControlUnit:
         Decode the instruction and execute it by setting the control signals.
         :param instruction: The instruction to execute (as a decimal value)
         """
-        opcode = instruction >> 26  # Get the opcode
-        funct = instruction & 0x3F  # Get the function code for R-type instructions
+        opcode = instruction >> 26
+        funct = instruction & 0b111111
         self.set_control_signals(opcode, funct)
 
 # here we instantiate the control unit class

@@ -91,25 +91,15 @@ class MIPS_GUI:
         self.memory_display.config(bg=theme["bg"], fg=theme["fg"])
 
     def run_simulation(self):
-        code = self.code_editor.get("1.0", tk.END).strip()
-        original_instructions = code.splitlines()
+        code = self.code_editor.get("1.0", tk.END).strip()  
+        instructions = code.splitlines()  
 
-        # Process labels and get a list of instructions without labels
-        labels_to_addresses, processed_instructions = preprocess_instructions(original_instructions)
         machine_code_instructions = []
-
-        for instruction_str in processed_instructions:
-            # Use the current PC value from the simulator. Ensure your simulator updates its PC correctly.
-            # Adjust the assemble_instruction function to accept labels_to_addresses and current PC
-            machine_code = assemble_instruction(instruction_str, labels_to_addresses, self.simulator.pc)
+        labels_to_addresses = preprocess_instructions(instructions)
+        for instruction_str in instructions:
+            # pass the instruction string to the assemble_instruction function to get the machine code and the pc
+            machine_code = assemble_instruction(instruction_str, self.simulator.pc, labels_to_addresses)
             machine_code_instructions.append(machine_code)
-            
-            # Here, you might want to simulate the execution of each instruction and update the PC accordingly
-            self.simulator.execute(machine_code)
-        
-        # Now you have a list of machine_code_instructions that you can use to simulate the execution
-        # If you want to run the entire list through your simulator, ensure your simulator's 'run' or 'execute' method is equipped to handle it
-
 
         try:
             self.simulator.run(machine_code_instructions) 

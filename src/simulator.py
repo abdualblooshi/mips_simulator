@@ -196,6 +196,13 @@ def assemble_instruction(instruction_str, labels_to_addresses, pc):
             funct = instr_details["funct"]
             assembled |= (rs << 21) | funct
             print(f"Instruction: {instruct_name}, RS: {operands[0]} ({rs})")
+        elif instruct_name in ["and"]:
+            rd = register_mapping[operands[0]]
+            rs = register_mapping[operands[1]]
+            rt = register_mapping[operands[2]]
+            funct = instr_details["funct"]
+            assembled |= (rs << 21) | (rt << 16) | (rd << 11) | funct
+            print(f"Instruction: {instruct_name}, RD: {operands[0]} ({rd}), RS: {operands[1]} ({rs}), RT: {operands[2]} ({rt})")
         else:
             rd = register_mapping[operands[0]]
             rs = register_mapping[operands[1]]
@@ -241,15 +248,6 @@ def assemble_instruction(instruction_str, labels_to_addresses, pc):
             assembled |= (base << 21) | (rt << 16) | (offset & 0xFFFF)
             # Debugging print statements
             print(f"Instruction: {instruct_name}, Base: {base_reg} ({base}), RT: {operands[0]} ({rt}), Offset: {offset}")
-        elif instruct_name in ["addi", "andi", "ori"]:  # Handle I-type instructions with immediate values
-            rt = register_mapping[operands[0]]  # The target register
-            rs = register_mapping[operands[1]]
-            # Process immediate value; check if it's a register or a number
-            immediate = register_mapping.get(operands[2], int(operands[2]))
-            # Assemble the instruction with the correct bit placements
-            assembled |= (rs << 21) | (rt << 16) | (immediate & 0xFFFF)
-            # Debugging print statements
-            print(f"Instruction: {instruct_name}, RS: {operands[1]} ({rs}), RT: {operands[0]} ({rt}), Immediate: {immediate}")
         else:  # Handle other I-type instructions (like addi, andi, ori, etc.)
             rt = register_mapping[operands[0]]  # The target register
             rs = register_mapping[operands[1]]  # The source register
