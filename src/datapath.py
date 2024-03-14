@@ -6,27 +6,22 @@ from control_unit import ALUOp
 
 class RegisterFile:
     """
-    A class to simulate the register file of the MIPS processor.
-    It contains 32 registers each of 32 bits, with register 0 being constant zero.
+    this is a class that simulates the register file in the MIPS processor
     """
 
     def __init__(self):
-        self.registers = [0] * 32
+        self.registers = [0] * 32 # 32 registers in the MIPS processor
 
     def read(self, reg_number):
         """
-        Read a value from a register.
-        :param reg_number: Register number to read from
-        :return: 32-bit value contained in the register
+        read a value from a register, the register number is passed as an argument to the function
         """
         self._validate_register_number(reg_number)
         return self.registers[reg_number]
 
     def write(self, reg_number, data):
         """
-        Write a value to a register.
-        :param reg_number: Register number to write to
-        :param data: 32-bit value to write into the register
+        write a value to a register, the register number and the data to be written are passed as arguments to the function
         """
         self._validate_register_number(reg_number)
         if reg_number != 0:  # Register 0 is always 0
@@ -43,7 +38,7 @@ class ALU:
         self.result = None
         self.zero = False
     
-    def operate(self, operand1, operand2, operation, funct=None):
+    def operate(self, operand1, operand2, operation, funct):
         # these are the arithmetic operations that the ALU can perform
         # the operation is determined by the control unit
         if operation == ALUOp.ADD.value:

@@ -1,14 +1,9 @@
 addi $t0, $zero, 1
 sll $t1, $t0, 2
-
 addi $t2, $zero, 15
 addi $t3, $zero, 10
 and $t4, $t2, $t3
-
 andi $t5, $t2, 3
-
 or $t6, $t2, $t3
-
 ori $t7, $t3, 5
-
 nor $t8, $t2, $t3

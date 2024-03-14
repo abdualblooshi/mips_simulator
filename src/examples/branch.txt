@@ -1,7 +1,7 @@
-Exit: addi $t4, $zero, 10
-
 addi $t0, $zero, 5
 addi $t1, $zero, 4
 beq $t0, $t1, Exit
 addi $t2, $zero, 10
 addi $t3, $zero, 20
+
+Exit: addi $t4, $zero, 10

@@ -1,0 +1,9 @@
+# Calculate factorial of 5
+addi $t0, $zero, 5   # $t0 = 5, counter for loop
+addi $t1, $zero, 1   # $t1 = 1, result of factorial
+Loop: slt $t2, $zero, $t0  # $t2 = $zero < $t0
+beq $t2, $zero, Exit # if $t0 == 0 goto Exit
+add $t1, $t1, $t0    # $t1 = $t1 + $t0
+addi $t0, $t0, -1    # $t0 = $t0 - 1
+j Loop               # jump to Loop
+Exit:

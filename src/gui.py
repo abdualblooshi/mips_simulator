@@ -47,8 +47,7 @@ class MIPS_GUI:
         self.code_editor.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
         
         instructions_label = tk.Label(self.master, text="Instructions:\n"
-                                                "  * Enter instructions in decimal format.\n"
-                                                "  * Example (addi $t0, $zero, 5):  8 8 0 5")
+                                                "  * Press run to load the registers and memory\n")       
         instructions_label.grid(row=2, column=0) # Place this below your code editor 
 
         # Run button

@@ -1,0 +1,9 @@
+# Check if a number (e.g., 5) is even or odd
+addi $t0, $zero, 5   # $t0 = number (5)
+andi $t1, $t0, 1     # $t1 = number & 1 (checks the least significant bit)
+beq $t1, $zero, Even # if $t1 == 0, number is even
+# If odd, can set a register to indicate odd or take some action
+j Exit
+Even:
+# If even, can set a register to indicate even or take some action
+Exit:
