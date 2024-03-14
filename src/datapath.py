@@ -114,49 +114,58 @@ def run_cycle():
     alu = ALU()
     control_unit = ControlUnit()
     
-    while True:  # This loop simulates the clock cycles of the MIPS processor
-        # Fetch
+    
+    # basically it goes through the phases of the MIPS processor the ones that dr hend explained in the lectures
+    # FETCH -> DECODE -> EXECUTE -> MEMORY ACCESS -> WRITE BACK
+    
+    while True:  # this loop simulates the clock cycles of the MIPS processor
+        # FETCH
         instruction = instruction_memory.read(pc.address)
-        pc.update(adder.add(pc.address, 4))  # Increment PC
+        pc.update(adder.add(pc.address, 4))
         
-        # Decode
-        opcode, rs, rt, rd, shamt, funct, immediate, address = parse_instruction(instruction)
-        control_unit.execute(instruction)  # Set control signals
+        # DECODE
+        opcode = (instruction & 0xFC000000) >> 26
+        rs = (instruction & 0x03E00000) >> 21
+        rt = (instruction & 0x001F0000) >> 16
+        rd = (instruction & 0x0000F800) >> 11
+        shamt = (instruction & 0x000007C0) >> 6
+        funct = instruction & 0x0000003F
+        immediate = instruction & 0x0000FFFF
+        address = instruction & 0x03FFFFFF
         
-        # Execute
-        operand1 = reg_file.read(rs)
-        operand2 = mux.select(reg_file.read(rt), sign_extend.extend(immediate), control_unit.alu_src)
-        alu_control_signal = control_unit.alu_op
-        alu.operate(operand1, operand2, alu_control_signal)
-
-        # Memory Access
-        if control_unit.mem_read or control_unit.mem_write:
+        # EXECUTE
+        reg_value1 = reg_file.read(rs)
+        reg_value2 = reg_file.read(rt)
+        sign_extended_immediate = sign_extend.extend(immediate)
+        
+        alu_operand1 = reg_value1
+        alu_operand2 = reg_value2 if control_unit.alu_src == 0 else sign_extended_immediate
+        
+        alu.operate(alu_operand1, alu_operand2, control_unit.alu_op)
+        
+        # MEMORY ACCESS
+        if control_unit.mem_read:
             memory_address = alu.result
-            if control_unit.mem_read:
-                read_data = data_memory.read(memory_address)
-            if control_unit.mem_write:
-                data_memory.write(memory_address, reg_file.read(rt))
-
-        # Write Back
+            data_memory.read(memory_address)
+        if control_unit.mem_write:
+            memory_address = alu.result
+            data_to_write = reg_value2
+            data_memory.write(memory_address, data_to_write)
+        
+        # WRITE BACK
         if control_unit.reg_write:
-            write_data = mux.select(alu.result, read_data, control_unit.mem_to_reg)
-            destination_reg = mux.select(rt, rd, control_unit.reg_dst)
+            destination_reg = rd if control_unit.reg_dst else rt
+            write_data = alu.result
             reg_file.write(destination_reg, write_data)
+        
+        # Update PC
+        if control_unit.branch and alu.zero:
+            pc.update(adder.add(pc.address, shift_left2.shift(sign_extended_immediate)))
+        elif control_unit.jump:
+            pc.update(mux.select(pc.address, shift_left2.shift(address), 1))
+        else:
+            pc.update(adder.add(pc.address, 4))
+            
 
-        # Update PC based on branching
-        branch_target = adder.add(pc.address, shift_left2.shift(sign_extend.extend(immediate)))
-        pc_update = mux.select(adder.add(pc.address, 4), branch_target, control_unit.branch & alu.zero)
-        pc_update = mux.select(pc_update, address, control_unit.jump)
-        pc.update(pc_update)
-
-def parse_instruction(instruction_str):
-    """Parses a single MIPS assembly instruction."""
-    parts = instruction_str.split()  
-    mnemonic = parts[0]
-    operands = parts[1].split(",")  
-    for i in range(len(operands)):  # Convert register names and immediates
-        if operands[i].startswith("$"):  # Register
-            operands[i] = int(operands[i][1:]) 
-        else:  # Immediate
-            operands[i] = int(operands[i])  
-    return mnemonic, operands
+if __name__ == "__main__":
+    run_cycle()

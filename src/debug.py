@@ -1,5 +1,5 @@
 import argparse
-from simulator import Simulator, assemble_instruction
+from simulator import Simulator, assemble_instruction, preprocess_instructions
 
 def run_from_file(file_path):
     with open(file_path, 'r') as file:
@@ -7,9 +7,11 @@ def run_from_file(file_path):
     run_simulator(instructions)
 
 def run_simulator(instructions):
+    # guys we will probably use this to run the simulator, maybe make it run when i press a button on GUI
     simulator = Simulator()
+    labels_to_addresses = preprocess_instructions(instructions)
     for instruction_str in instructions:
-        machine_code = assemble_instruction(instruction_str)
+        machine_code = assemble_instruction(instruction_str, labels_to_addresses, simulator.pc)
         simulator.run([machine_code])
         # Output the state of the registers and memory after running each instruction
         print_register_state(simulator)
@@ -42,7 +44,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run MIPS Simulator")
     parser.add_argument("-f", "--file", help="Path to the file containing MIPS instructions")
     args = parser.parse_args()
-
+    
     if args.file:
         run_from_file(args.file)
     else:

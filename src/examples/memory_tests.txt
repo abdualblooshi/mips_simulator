@@ -1,0 +1,3 @@
+addi $t1, $zero, 10
+sw $t1, 4($t0)
+lw $t2, 4($t0)

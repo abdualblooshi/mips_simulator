@@ -31,28 +31,20 @@ class Simulator:
         
 
     def fetch(self):
-        """
-        Fetch the next instruction from instruction memory.
-        """
         instruction = instruction_memory.read(self.pc)
+        print(f"Fetching at PC={self.pc}: Instruction={instruction}")
         self.pc += 4  # Increment PC to the next word
         return instruction
 
+
     def decode(self, instruction):
-        """
-        Decode the instruction and update the control unit signals.
-        """
         opcode = (instruction >> 26) & 0x3F
         rs = (instruction >> 21) & 0x1F
         rt = (instruction >> 16) & 0x1F
         rd = (instruction >> 11) & 0x1F
-        immediate = instruction & 0xFFFF
-
-        # You might need additional fields like these depending on your implementation
-        #shamt = (instruction >> 6) & 0x1F
-        #funct = instruction & 0x3F
-
+        print(f"Decoded: Opcode={opcode}, rs={rs} ({self.inverted_register_mapping[rs]}), rt={rt} ({self.inverted_register_mapping[rt]}), rd={rd} ({self.inverted_register_mapping[rd]})")
         self.control_unit.set_control_signals(opcode)
+
 
     def execute(self, instruction):
         """
@@ -72,6 +64,8 @@ class Simulator:
         alu_operand1 = reg_value1 
         alu_operand2 = reg_value2 if self.control_unit.alu_src == 0 else sign_extended_immediate
         
+        print(f"ALU Operation: {self.control_unit.alu_op}")
+        
         print("ALU Operands:", alu_operand1, alu_operand2) # Add this line
         # Perform ALU Operation
         self.alu.operate(alu_operand1, alu_operand2, self.control_unit.alu_op)
@@ -83,21 +77,22 @@ class Simulator:
         # Handle memory operations
         if self.control_unit.mem_read:
             memory_address = self.alu.result
+            print(f"Memory Read from address {self.alu.result}")
             data_from_memory = self.data_memory.read(memory_address)
+            print(f"Data from memory: {data_from_memory}")
         if self.control_unit.mem_write:
             memory_address = self.alu.result
             data_to_write = reg_value2  
             self.data_memory.write(memory_address, data_to_write)
+            print(f"Memory Write to address {self.alu.result} with data {reg_value2}")
 
         if self.control_unit.reg_write:
             destination_reg = rd if self.control_unit.reg_dst else rt  # This depends on your control unit's logic
-            write_data = self.alu.result
+            write_data = data_from_memory if self.control_unit.mem_to_reg else self.alu.result
             # Debug prints
             print(f"RegWrite: {self.control_unit.reg_write}, reg_dst: {self.control_unit.reg_dst}")
             print(f"Register to Write: {self.inverted_register_mapping.get(destination_reg, '$unknown')}, Data to Write: {hex(write_data)}")
             self.registers.write(destination_reg, write_data)
-
-
 
         # Update PC
         if self.control_unit.branch and self.alu.zero:
@@ -126,10 +121,27 @@ class Simulator:
             self.fetch()
             self.decode(instruction)
             self.execute(instruction)
+            
+def preprocess_instructions(instructions):
+    labels_to_addresses = {}
+    pc = 0  # Initial program counter value
+    processed_instructions = []  # Instructions without labels
     
-def assemble_instruction(instruction_str):
+    for instruction in instructions:
+        if ':' in instruction:
+            # This is a label definition
+            label = instruction.replace(':', '').strip()
+            labels_to_addresses[label] = pc
+        else:
+            # This is a regular instruction
+            processed_instructions.append(instruction)
+            pc += 4  # Assuming all instructions are 4 bytes long
+    
+    return labels_to_addresses, processed_instructions
+
+def assemble_instruction(instruction_str, labels_to_addresses, pc):
     parts = instruction_str.split(maxsplit=1)
-    mnemonic = parts[0]
+    instruct_name = parts[0]
     operands_str = parts[1] if len(parts) > 1 else ""
     operands = [op.strip() for op in operands_str.split(",")] if operands_str else []
 
@@ -164,36 +176,94 @@ def assemble_instruction(instruction_str):
         "$gp": 28, "$sp": 29, "$fp": 30, "$ra": 31
     }
     
-    inverted_register_mapping = {v: k for k, v in register_mapping.items()}
-
-    instr_details = instruction_set.get(mnemonic)
+    instr_details = instruction_set.get(instruct_name)
     if not instr_details:
-        raise ValueError(f"Unsupported instruction mnemonic: {mnemonic}")
+        raise ValueError(f"Unsupported instruction instruct_name: {instruct_name}")
 
     opcode = instr_details["opcode"]
     assembled = opcode << 26
 
     if instr_details["format"] == "R":
-        rs, rt, rd = [register_mapping[op] if op in register_mapping else int(op[1:]) for op in operands[:3]]
-        shamt = int(operands[3]) if len(operands) > 3 else 0
-        funct = instr_details["funct"]
-        assembled |= (rs << 21) | (rt << 16) | (rd << 11) | (shamt << 6) | funct
+        if instruct_name in ["sll"]:
+            rd = register_mapping[operands[0]]
+            rt = register_mapping[operands[1]]
+            shamt = int(operands[2])
+            funct = instr_details["funct"]
+            assembled |= (rt << 16) | (rd << 11) | (shamt << 6) | funct
+            print(f"Instruction: {instruct_name}, RD: {operands[0]} ({rd}), RT: {operands[1]} ({rt}), Shamt: {shamt}")
+        elif instruct_name in ["jr"]:
+            rs = register_mapping[operands[0]]
+            funct = instr_details["funct"]
+            assembled |= (rs << 21) | funct
+            print(f"Instruction: {instruct_name}, RS: {operands[0]} ({rs})")
+        else:
+            rd = register_mapping[operands[0]]
+            rs = register_mapping[operands[1]]
+            rt = register_mapping[operands[2]]
+            funct = instr_details["funct"]
+            assembled |= (rs << 21) | (rt << 16) | (rd << 11) | funct
+            print(f"Instruction: {instruct_name}, RD: {operands[0]} ({rd}), RS: {operands[1]} ({rs}), RT: {operands[2]} ({rt})")
     elif instr_details["format"] == "I":
-        if mnemonic in ["lw", "sw"]:  # Handle instructions with offset(base) addressing
-            offset_base = operands[1].replace('(', ' ').replace(')', '').split()
-            offset = int(offset_base[0])
-            base = register_mapping[offset_base[1]]
-            rt = register_mapping[operands[0]]
+        if instruct_name in ["sw"]:  # Handle instructions with offset(base) addressing
+            # Split the offset(base) format properly
+            offset, base_reg = operands[1].split('(')
+            base_reg = base_reg.rstrip(')')  # Remove the closing parenthesis
+            offset = int(offset)
+            base = register_mapping[base_reg]
+            rt = register_mapping[operands[0]]  # For lw and sw, rt is the first operand
+            # Assemble the instruction with the correct bit placements
             assembled |= (base << 21) | (rt << 16) | (offset & 0xFFFF)
-        else:  # Handle other I-type instructions
-            rt = register_mapping[operands[0]] if operands[0] in register_mapping else int(operands[0][1:])
-            rs = register_mapping[operands[1]] if operands[1] in register_mapping else int(operands[1][1:])
-            immediate = int(operands[2])
+            # Debugging print statements
+            print(f"Instruction: {instruct_name}, Base: {base_reg} ({base}), RT: {operands[0]} ({rt}), Offset: {offset}")
+        elif instruct_name == "beq":
+            rs = register_mapping[operands[0].strip()]
+            rt = register_mapping[operands[1].strip()]
+            label = operands[2].strip()
+
+            if label not in labels_to_addresses:
+                raise ValueError(f"Label {label} not found in symbol table")
+
+            target_address = labels_to_addresses[label]
+            pc_next = pc + 4
+            relative_offset = (target_address - pc_next) // 4
+
+            assembled |= (rs << 21) | (rt << 16) | (relative_offset & 0xFFFF)
+            print(f"Instruction: beq, RS: {operands[0]}, RT: {operands[1]}, Label: {label}, Relative Offset: {relative_offset}")
+            
+        elif instruct_name in ["lw"]:  # Handle instructions with offset(base) addressing
+            # Split the offset(base) format properly
+            offset, base_reg = operands[1].split('(')
+            base_reg = base_reg.rstrip(')')
+            offset = int(offset)
+            base = register_mapping[base_reg]
+            rt = register_mapping[operands[0]]
+            # Assemble the instruction with the correct bit placements
+            assembled |= (base << 21) | (rt << 16) | (offset & 0xFFFF)
+            # Debugging print statements
+            print(f"Instruction: {instruct_name}, Base: {base_reg} ({base}), RT: {operands[0]} ({rt}), Offset: {offset}")
+        elif instruct_name in ["addi", "andi", "ori"]:  # Handle I-type instructions with immediate values
+            rt = register_mapping[operands[0]]  # The target register
+            rs = register_mapping[operands[1]]
+            # Process immediate value; check if it's a register or a number
+            immediate = register_mapping.get(operands[2], int(operands[2]))
+            # Assemble the instruction with the correct bit placements
             assembled |= (rs << 21) | (rt << 16) | (immediate & 0xFFFF)
+            # Debugging print statements
+            print(f"Instruction: {instruct_name}, RS: {operands[1]} ({rs}), RT: {operands[0]} ({rt}), Immediate: {immediate}")
+        else:  # Handle other I-type instructions (like addi, andi, ori, etc.)
+            rt = register_mapping[operands[0]]  # The target register
+            rs = register_mapping[operands[1]]  # The source register
+            # Process immediate value; no need to check if it's a register for these types of instructions
+            immediate = int(operands[2])
+            # Assemble the instruction with the correct bit placements
+            assembled |= (rs << 21) | (rt << 16) | (immediate & 0xFFFF)
+            # Debugging print statements
+            print(f"Instruction: {instruct_name}, RS: {operands[1]} ({rs}), RT: {operands[0]} ({rt}), Immediate: {immediate}")
     elif instr_details["format"] == "J":
         address = int(operands[0])
         assembled |= (address & 0x03FFFFFF)
     else:
         raise ValueError(f"Unsupported instruction format: {instr_details['format']}")
 
+    print("Assembled (before returning):", assembled)
     return assembled

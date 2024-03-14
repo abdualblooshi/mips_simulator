@@ -4,8 +4,9 @@ import tkinter as tk
 from tkinter import ttk  # Import ttk for the Combobox 
 from tkinter import scrolledtext
 from tkinter import messagebox
+from tkinter import filedialog
 
-from simulator import Simulator, assemble_instruction
+from simulator import Simulator, assemble_instruction, preprocess_instructions
 
 class MIPS_GUI:
     def __init__(self, master):
@@ -17,11 +18,24 @@ class MIPS_GUI:
         self.setup_ui()
         self.apply_theme()
         
+    def open_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if file_path:
+            try:
+                with open(file_path, 'r') as file:
+                    code = file.read()
+                    self.code_editor.delete("1.0", tk.END)
+                    self.code_editor.insert(tk.INSERT, code)
+            except Exception as e:
+                messagebox.showerror("Open File", f"Failed to read file\n{str(e)}")
+
+        
 
     def setup_ui(self):
-        # Create a menu bar
+        # open file button
         self.menu_bar = tk.Menu(self.master)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(label="Open", command=self.open_file)
         self.file_menu.add_command(label="Toggle Dark Mode", command=self.toggle_dark_mode)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.exit_app)
@@ -77,13 +91,25 @@ class MIPS_GUI:
         self.memory_display.config(bg=theme["bg"], fg=theme["fg"])
 
     def run_simulation(self):
-        code = self.code_editor.get("1.0", tk.END).strip()  
-        instructions = code.splitlines()  
+        code = self.code_editor.get("1.0", tk.END).strip()
+        original_instructions = code.splitlines()
 
+        # Process labels and get a list of instructions without labels
+        labels_to_addresses, processed_instructions = preprocess_instructions(original_instructions)
         machine_code_instructions = []
-        for instruction_str in instructions:
-            machine_code = assemble_instruction(instruction_str)
+
+        for instruction_str in processed_instructions:
+            # Use the current PC value from the simulator. Ensure your simulator updates its PC correctly.
+            # Adjust the assemble_instruction function to accept labels_to_addresses and current PC
+            machine_code = assemble_instruction(instruction_str, labels_to_addresses, self.simulator.pc)
             machine_code_instructions.append(machine_code)
+            
+            # Here, you might want to simulate the execution of each instruction and update the PC accordingly
+            self.simulator.execute(machine_code)
+        
+        # Now you have a list of machine_code_instructions that you can use to simulate the execution
+        # If you want to run the entire list through your simulator, ensure your simulator's 'run' or 'execute' method is equipped to handle it
+
 
         try:
             self.simulator.run(machine_code_instructions) 
