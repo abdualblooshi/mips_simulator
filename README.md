@@ -1,6 +1,6 @@
 # MIPS Processor Simulator
 
-A mips processor simulator that I made during my Computer Architecture course in British University in Dubai
+Commit history is pretty weird due to working on Live Share 💀, I made this during my <b>Computer Architecture</b> course in British University in Dubai
 
 This MIPS Simulator is a Python-based project designed to simulate the execution of MIPS assembly instructions. It includes a basic graphical user interface (GUI) for easier interaction, making it suitable for educational purposes, such as learning about MIPS architecture or testing simple MIPS programs.
 
